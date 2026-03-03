@@ -3,10 +3,13 @@
 import React, { useEffect, useState } from 'react';
 
 const CustomCursor = () => {
+    const [mounted, setMounted] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isHovering, setIsHovering] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
+
         const updateCursorPosition = (e: MouseEvent) => {
             setPosition({ x: e.clientX, y: e.clientY });
         };
@@ -34,7 +37,7 @@ const CustomCursor = () => {
         };
     }, []);
 
-    if (typeof window === 'undefined') return null;
+    if (!mounted) return null;
 
     return (
         <div
