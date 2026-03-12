@@ -20,7 +20,7 @@ export function useTokenPrices(coins = DEFAULT_COINS) {
     const fetchPrices = async () => {
         try {
             const response = await axios.get(
-                `https://api.coingecko.com/api/v3/simple/price?ids=${coins.join(',')}&vs_currencies=usd&include_24hr_change=true`
+                `/api/prices?ids=${coins.join(',')}`
             );
             setPrices(response.data);
             setError(null);

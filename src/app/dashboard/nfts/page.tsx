@@ -1,85 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
-import { alchemy } from '@/lib/alchemy';
+import { useNFTs } from '@/hooks/useNFTs';
 import { motion } from 'framer-motion';
-
-interface NFT {
-    contractAddress: string;
-    tokenId: string;
-    title: string;
-    description: string;
-    media: { gateway: string }[];
-}
-
-const MOCK_NFTS = [
-    {
-        contractAddress: "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
-        tokenId: "8817",
-        title: "Zyphor Genesis #001",
-        description: "The ultimate Zyphor community pass.",
-        rarity: "Legendary",
-        collection: "Zyphor Genesis",
-        media: [{ gateway: "/assets/nfts/zyphor_genesis.png" }]
-    },
-    {
-        contractAddress: "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb",
-        tokenId: "9998",
-        title: "Zyphor Legend #42",
-        description: "A symbol of pure power and prestige.",
-        rarity: "Legendary",
-        collection: "Zyphor Legends",
-        media: [{ gateway: "/assets/nfts/zyphor_legend.png" }]
-    },
-    {
-        contractAddress: "0x123",
-        tokenId: "101",
-        title: "Zyphor Vanguard #101",
-        description: "The frontline of the Zyphor ecosystem.",
-        rarity: "Epic",
-        collection: "Zyphor Vanguards",
-        media: [{ gateway: "/assets/nfts/zyphor_rare.png" }]
-    },
-    {
-        contractAddress: "0x456",
-        tokenId: "442",
-        title: "Zyphor Genesis #002",
-        description: "The second ever Zyphor NFT.",
-        rarity: "Rare",
-        collection: "Zyphor Genesis",
-        media: [{ gateway: "/assets/nfts/zyphor_genesis.png" }]
-    }
-];
 
 export default function NFTGalleryPage() {
     const { address } = useAccount();
-    const [nfts, setNfts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const { nfts, loading } = useNFTs(address);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterBy, setFilterBy] = useState('All');
-
-    useEffect(() => {
-        const fetchNFTs = async () => {
-            if (!address || !process.env.NEXT_PUBLIC_ALCHEMY_API_KEY) {
-                setNfts(MOCK_NFTS);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const response = await alchemy.nft.getNftsForOwner(address);
-                setNfts(response.ownedNfts.length > 0 ? response.ownedNfts : MOCK_NFTS);
-            } catch (error) {
-                console.error("Error fetching NFTs:", error);
-                setNfts(MOCK_NFTS);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchNFTs();
-    }, [address]);
 
     const filteredNfts = nfts.filter(nft => {
         const matchesSearch = (nft.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -4,57 +4,26 @@ import React from 'react';
 import { useAccount, useBalance } from 'wagmi';
 import PortfolioCard from '@/components/dashboard/PortfolioCard';
 import TransactionItem from '@/components/dashboard/TransactionItem';
-import { mockPortfolio, mockAssets, mockTransactions } from '@/lib/mockData';
 import Link from 'next/link';
 import { formatUnits } from 'viem';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useTokenPrices } from '@/hooks/useTokenPrices';
-import { getTokenBalances } from '@/lib/alchemy';
 
 export default function DashboardPage() {
     const { address } = useAccount();
     const { data: ethBalance } = useBalance({ address });
-    const { prices, loading: pricesLoading } = useTokenPrices(['ethereum', 'bitcoin', 'solana', 'usd-coin']);
-
-    const [realAssets, setRealAssets] = React.useState<any[]>([]);
-    const [loadingAssets, setLoadingAssets] = React.useState(false);
-
-    React.useEffect(() => {
-        const fetchRealBalances = async () => {
-            if (!address || !process.env.NEXT_PUBLIC_ALCHEMY_API_KEY) return;
-
-            setLoadingAssets(true);
-            try {
-                const balances = await getTokenBalances(address);
-                // In a real app, we'd fetch metadata (name, symbol, logo) for each token
-                // For now, we'll map the known ones or show placeholders
-                const mapped = balances.map(b => ({
-                    symbol: 'TOKEN', // Simplified for demo
-                    name: 'Unknown Token',
-                    balance: (Number(b.tokenBalance) / Math.pow(10, 18)).toFixed(4), // Assume 18 decimals for demo
-                    valueUsd: 0,
-                    change24h: 0,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/7047/7047081.png'
-                }));
-                setRealAssets(mapped);
-            } catch (error) {
-                console.error("Failed to fetch real balances:", error);
-            } finally {
-                setLoadingAssets(false);
-            }
-        };
-
-        fetchRealBalances();
-    }, [address]);
+    const { prices } = useTokenPrices(['ethereum']);
+    const { summary, assets, loading: loadingAssets } = usePortfolio(address);
+    const { transactions, loading: loadingTx } = useTransactions(address, 4);
 
     const ethPrice = prices?.ethereum?.usd || 3450.20;
     const ethChange = prices?.ethereum?.usd_24h_change || 2.4;
 
-    const displayAssets = realAssets.length > 0 ? realAssets : mockAssets;
-
     // Calculate total balance
     const ethValue = Number(ethBalance?.value ? formatUnits(ethBalance.value, ethBalance.decimals) : 0) * ethPrice;
-    const otherAssetsValue = displayAssets.reduce((acc, asset) => acc + (asset.valueUsd || 0), 0);
-    const totalBalance = ethValue + otherAssetsValue;
+    const otherAssetsValue = assets.reduce((acc, asset) => acc + (asset.valueUsd || 0), 0);
+    const totalBalance = summary?.totalBalanceUsd || (ethValue + otherAssetsValue);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -69,9 +38,9 @@ export default function DashboardPage() {
                 <PortfolioCard
                     title="Total Balance"
                     value={`$${totalBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                    change={ethChange}
+                    change={summary?.balanceChange24hPct || ethChange}
                     icon="account_balance_wallet"
-                    trend={ethChange >= 0 ? "up" : "down"}
+                    trend={(summary?.balanceChange24hPct || ethChange) >= 0 ? "up" : "down"}
                 />
                 <PortfolioCard
                     title="Native ETH"
@@ -82,10 +51,10 @@ export default function DashboardPage() {
                 />
                 <PortfolioCard
                     title="Active Positions"
-                    value="4"
-                    change={-1.2}
+                    value={String(assets.length || 4)}
+                    change={summary?.balanceChange24hPct || -1.2}
                     icon="pie_chart"
-                    trend="down"
+                    trend={(summary?.balanceChange24hPct || -1.2) >= 0 ? "up" : "down"}
                 />
             </div>
 
@@ -100,7 +69,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-                        {(loadingAssets ? Array(3).fill(0) : displayAssets.slice(0, 3)).map((asset, idx) => (
+                        {(loadingAssets ? Array(3).fill(0) : assets.slice(0, 3)).map((asset, idx) => (
                             <div key={asset?.symbol || idx} className={`flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-black/5 dark:hover:border-white/5 transition-colors ${loadingAssets ? 'animate-pulse' : ''}`}>
                                 <div className="flex items-center gap-4">
                                     {loadingAssets ? (
@@ -151,9 +120,15 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="space-y-2">
-                        {mockTransactions.slice(0, 4).map((tx) => (
-                            <TransactionItem key={tx.id} {...tx} />
-                        ))}
+                        {loadingTx ? (
+                            Array(4).fill(0).map((_, idx) => (
+                                <div key={idx} className="h-16 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                            ))
+                        ) : (
+                            transactions.map((tx) => (
+                                <TransactionItem key={tx.id} {...tx} />
+                            ))
+                        )}
                     </div>
                 </div>
 
