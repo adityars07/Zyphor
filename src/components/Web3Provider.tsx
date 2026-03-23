@@ -23,20 +23,23 @@ import {
 import { useTheme } from './ThemeProvider';
 import '@rainbow-me/rainbowkit/styles.css';
 
-// Get your own Project ID from https://cloud.walletconnect.com
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
+function makeWagmiConfig() {
+    const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
 
-const config = getDefaultConfig({
-    appName: 'Zyphor',
-    projectId: projectId,
-    chains: [mainnet, polygon, optimism, arbitrum, base, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [sepolia] : [])],
-    ssr: true, // If your dApp uses server side rendering (SSR)
-});
-
-const queryClient = new QueryClient();
+    return getDefaultConfig({
+        appName: 'Zyphor',
+        projectId,
+        chains: [mainnet, polygon, optimism, arbitrum, base, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [sepolia] : [])],
+        ssr: true,
+    });
+}
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
     const { theme } = useTheme();
+
+    // Lazy-init: only called once per component lifecycle, safe for SSR with ssr:true
+    const [config] = React.useState(() => makeWagmiConfig());
+    const [queryClient] = React.useState(() => new QueryClient());
 
     return (
         <WagmiProvider config={config}>
