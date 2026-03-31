@@ -91,7 +91,15 @@ const Navbar = () => {
                     </div>
 
                     {/* Dashboard Link */}
-                    <Link href="/dashboard" className="hidden md:flex items-center justify-center rounded-full bg-primary hover:bg-primary-dark text-white text-sm font-bold px-5 py-2 transition-all hover:scale-105 active:scale-95">
+                    <Link
+                        href="/dashboard"
+                        className="hidden md:flex items-center gap-1.5 justify-center rounded-full text-sm font-bold px-5 py-2 transition-all hover:scale-105 active:scale-95 hover:bg-primary/10"
+                        style={{
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border)',
+                        }}
+                    >
+                        <span className="material-symbols-outlined text-[16px]">dashboard</span>
                         Dashboard
                     </Link>
 
